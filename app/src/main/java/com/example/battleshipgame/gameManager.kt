@@ -148,4 +148,90 @@ class GameManager(){
             }
         })
     }
+
+    fun joinMatch(userId: String?, completion: (Boolean, String, String?) -> Unit) {
+        val gamesRef = database.child("active_games")
+        gamesRef.orderByChild("isFull").equalTo(false).limitToFirst(1)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        // Get the first available match
+                        val matchSnapshot = snapshot.children.first()
+                        val gameId = matchSnapshot.key ?: return completion(false, "Failed to join match.", null)
+
+                        // Update the match to include user2Id and set isFull to true
+                        val updates = mapOf(
+                            "user2Id" to userId,
+                            "isFull" to true
+                        )
+
+                        gamesRef.child(gameId).updateChildren(updates).addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                completion(true, "Successfully joined match.", gameId)
+                            } else {
+                                completion(false, "Failed to join match: ${task.exception?.message}", null)
+                            }
+                        }
+                    } else {
+                        // No available matches found
+                        completion(false, "No available matches to join.", null)
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    completion(false, "Error finding match: ${error.message}", null)
+                }
+            })
+    }
+
+    fun getPlayerRole(gameId: String?, userId: String?, completion: (Boolean, String?) -> Unit) {
+        val gameRef = gameId?.let { database.child("active_games").child(it) }
+
+        gameRef?.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    val user1Id = snapshot.child("user1Id").value as? String
+                    val user2Id = snapshot.child("user2Id").value as? String
+
+                    if (userId == user1Id) {
+                        completion(true, "user1")
+                    } else if (userId == user2Id) {
+                        completion(true, "user2")
+                    } else {
+                        completion(false, null)
+                    }
+                } else {
+                    completion(false, null)
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                completion(false, null)
+            }
+        })
+    }
+
+    fun updateShipBoard(gameId: String?, userId: String?, shipBoard: List<Int>, completion: (Boolean, String) -> Unit) {
+        getPlayerRole(gameId, userId) { success, role ->
+            if (success && role != null) {
+                val userBoardPath = if (role == "user1") {
+                    "user1Data/userShipBoard"
+                } else {
+                    "user2Data/userShipBoard"
+                }
+
+                val gameRef = gameId?.let { database.child("active_games").child(it).child(userBoardPath) }
+
+                gameRef?.setValue(shipBoard)?.addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        completion(true, "Ship board updated successfully.")
+                    } else {
+                        completion(false, "Failed to update ship board: ${task.exception?.message}")
+                    }
+                }
+            } else {
+                completion(false, "Failed to determine player role.")
+            }
+        }
+    }
 }
