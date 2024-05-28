@@ -284,7 +284,6 @@ class GameManager(){
                             val targetHitPointsPath = if (isUser1Turn) "user2Data/hitPointsLeft" else "user1Data/hitPointsLeft"
                             val shooterScorePath = if (isUser1Turn) "user1Data/currentScore" else "user2Data/currentScore"
                             val shooterConsecutiveHitsPath = if (isUser1Turn) "user1Data/consecutiveHits" else "user2Data/consecutiveHits"
-                            val shooterHighestScorePath = if (isUser1Turn) "user1HighestScore" else "user2HighestScore"
 
                             val nextTurn = if (isUser1Turn) 2L else 1L
 
@@ -298,14 +297,21 @@ class GameManager(){
 
                             if (shooterFogOfWarBoard != null && targetShipBoard != null) {
                                 val updatedFogOfWarBoard = shooterFogOfWarBoard.toMutableList()
+                                val updatedShipBoard = targetShipBoard.toMutableList()
                                 val targetCellStatus = targetShipBoard[cellIndex]
                                 var updatedHitPoints = targetHitPoints
 
                                 var newScore = shooterScore
                                 var newConsecutiveHits = shooterConsecutiveHits
 
+                                if(targetCellStatus == 2){
+                                    completion(false, "Already shot there before. Try somewhere else.")
+                                    return
+                                }
+
                                 if (targetCellStatus == 1) {
                                     updatedFogOfWarBoard[cellIndex] = 2  // Hit
+                                    updatedShipBoard[cellIndex] = 2 //Denoting ship was hit
 
                                     if (updatedHitPoints!=null){
                                         updatedHitPoints -= 1
@@ -325,6 +331,7 @@ class GameManager(){
                                 val updates = mapOf(
                                     "whosTurnIsIt" to nextTurn,
                                     "$shooterBoardPath" to updatedFogOfWarBoard,
+                                    "$targetBoardPath" to updatedShipBoard,
                                     targetHitPointsPath to updatedHitPoints,
                                     shooterScorePath to newScore,
                                     shooterConsecutiveHitsPath to newConsecutiveHits
