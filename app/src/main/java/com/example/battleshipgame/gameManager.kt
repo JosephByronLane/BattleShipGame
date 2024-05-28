@@ -237,6 +237,25 @@ class GameManager(){
         }
     }
 
+    private fun updateHighestScore(userId: String, currentScore: Long) {
+        val userRef = database.child("registered_users").child(userId)
+
+        userRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    val highestScore = snapshot.child("highestScore").value as? Long ?: 0L
+
+                    if (currentScore > highestScore) {
+                        userRef.child("highestScore").setValue(currentScore)
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Handle error if necessary
+            }
+        })
+    }
     fun shoot(gameId: String?, userId: String?, cellIndex: Int, completion: (Boolean, String) -> Unit) {
         if (userId == null) {
             completion(false, "User ID is null")
@@ -263,6 +282,9 @@ class GameManager(){
                             val shooterBoardPath = if (isUser1Turn) "user1Data/userFogOfWarBoard" else "user2Data/userFogOfWarBoard"
                             val targetBoardPath = if (isUser1Turn) "user2Data/userShipBoard" else "user1Data/userShipBoard"
                             val targetHitPointsPath = if (isUser1Turn) "user2Data/hitPointsLeft" else "user1Data/hitPointsLeft"
+                            val shooterScorePath = if (isUser1Turn) "user1Data/currentScore" else "user2Data/currentScore"
+                            val shooterConsecutiveHitsPath = if (isUser1Turn) "user1Data/consecutiveHits" else "user2Data/consecutiveHits"
+                            val shooterHighestScorePath = if (isUser1Turn) "user1HighestScore" else "user2HighestScore"
 
                             val nextTurn = if (isUser1Turn) 2L else 1L
 
@@ -271,10 +293,16 @@ class GameManager(){
                             val targetHitPoints = snapshot.child(targetHitPointsPath).value as Long
                             Log.d("GameManagerShoot", "HP: $targetHitPointsPath")
 
+                            val shooterScore = snapshot.child(shooterScorePath).value as? Long ?: 0L
+                            val shooterConsecutiveHits = snapshot.child(shooterConsecutiveHitsPath).value as? Long ?: 0L
+
                             if (shooterFogOfWarBoard != null && targetShipBoard != null) {
                                 val updatedFogOfWarBoard = shooterFogOfWarBoard.toMutableList()
                                 val targetCellStatus = targetShipBoard[cellIndex]
                                 var updatedHitPoints = targetHitPoints
+
+                                var newScore = shooterScore
+                                var newConsecutiveHits = shooterConsecutiveHits
 
                                 if (targetCellStatus == 1) {
                                     updatedFogOfWarBoard[cellIndex] = 2  // Hit
@@ -284,20 +312,28 @@ class GameManager(){
                                         Log.d("GameManagerShoot", "HP: $targetHitPointsPath")
                                     }
 
+                                    newScore += 20 + (newConsecutiveHits * 5)
+                                    newConsecutiveHits += 1
+
 
                                 } else {
                                     updatedFogOfWarBoard[cellIndex] = 1  // Miss
+                                    newConsecutiveHits = 0
+                                    newScore -= 2
                                 }
 
                                 val updates = mapOf(
                                     "whosTurnIsIt" to nextTurn,
                                     "$shooterBoardPath" to updatedFogOfWarBoard,
-                                    targetHitPointsPath to updatedHitPoints
+                                    targetHitPointsPath to updatedHitPoints,
+                                    shooterScorePath to newScore,
+                                    shooterConsecutiveHitsPath to newConsecutiveHits
                                 )
 
                                 if (gameRef != null) {
                                     gameRef.updateChildren(updates).addOnCompleteListener { task ->
                                         if (task.isSuccessful) {
+                                            updateHighestScore(userId, newScore)
                                             completion(true, "Shot fired successfully.")
                                         } else {
                                             completion(false, "Failed to update shot: ${task.exception?.message}")
@@ -387,4 +423,70 @@ class GameManager(){
             })
         }
     }
+
+    fun getPlayerNumber(gameId: String?, userId: String?, completion: (Boolean, String?) -> Unit) {
+        val gameRef = gameId?.let { database.child("active_games").child(it) }
+
+        gameRef?.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    val user1Id = snapshot.child("user1Id").value as? String
+                    val user2Id = snapshot.child("user2Id").value as? String
+
+                    if (userId == user1Id) {
+                        completion(true, "1")
+                    } else if (userId == user2Id) {
+                        completion(true, "2")
+                    } else {
+                        completion(false, null)
+                    }
+                } else {
+                    completion(false, null)
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                completion(false, null)
+            }
+        })
+    }
+
+    fun getAllUsersSortedByHighestScore(completion: (Boolean, List<Map<String, Any>>?) -> Unit) {
+        val usersRef = database.child("registered_users")
+
+        usersRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    val userList = mutableListOf<Map<String, Any>>()
+
+                    for (userSnapshot in snapshot.children) {
+                        val userId = userSnapshot.key
+                        val userName = userSnapshot.child("username").value as? String
+                        val highestScore = userSnapshot.child("highestScore").value as? Long
+
+                        if (userId != null && userName != null && highestScore != null) {
+                            val userMap = mapOf(
+                                "userId" to userId,
+                                "username" to userName,
+                                "highestScore" to highestScore
+                            )
+                            userList.add(userMap)
+                        }
+                    }
+
+                    // Sort the list by highestScore in descending order
+                    userList.sortByDescending { it["highestScore"] as Long }
+
+                    completion(true, userList)
+                } else {
+                    completion(false, null)
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                completion(false, null)
+            }
+        })
+    }
+
 }

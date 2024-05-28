@@ -42,6 +42,9 @@ class TestActivity : AppCompatActivity() {
         val gameIdField = findViewById<TextView>(R.id.idGameField)
         val hitPointsLeftField = findViewById<TextView>(R.id.userHitPoints)
         val userTurnField =  findViewById<TextView>(R.id.userTurn)
+        val userNumberField = findViewById<TextView>(R.id.PlayerNumber)
+
+
 
         val shootfieldtextedit = findViewById<EditText>(R.id.shootCell)
 
@@ -93,6 +96,18 @@ class TestActivity : AppCompatActivity() {
         }
 
 
+        fun getUserNumber(){
+            gameManager.getPlayerNumber(currentGameID,loggedInUserID) { success, turn ->
+                if (success) {
+                    userNumberField.text  = turn.toString()
+                } else {
+                    Toast.makeText(this, "error bruh", Toast.LENGTH_LONG).show()
+                }
+            }
+
+        }
+
+
         fun getUserTurn(){
             gameManager.getWhosTurnIsIt(currentGameID) { success, message, turn ->
                 if (success) {
@@ -103,6 +118,8 @@ class TestActivity : AppCompatActivity() {
             }
 
         }
+
+
 
         // Register Button Click Listener
         registerButton.setOnClickListener {
@@ -155,7 +172,7 @@ class TestActivity : AppCompatActivity() {
                         gameIdField.text = currentGameID
                         updateHitPoints(currentGameID, loggedInUserID)
                         getUserTurn()
-
+                        getUserNumber()
 
 
                     } else {
@@ -175,7 +192,7 @@ class TestActivity : AppCompatActivity() {
                     gameIdField.text = currentGameID
                     updateHitPoints(currentGameID, loggedInUserID)
                     getUserTurn()
-
+                    getUserNumber()
 
                 } else {
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
@@ -214,8 +231,17 @@ class TestActivity : AppCompatActivity() {
             }
 
         }
-
-
-
+        gameManager.getAllUsersSortedByHighestScore { success, userList ->
+            if (success) {
+                userList?.forEach { user ->
+                    Log.d("UserScores", "User ID: ${user["userId"]}, Username: ${user["username"]}, Highest Score: ${user["highestScore"]}")
+                }
+            } else {
+                Log.d("UserScores","Failed to retrieve and sort users.")
+            }
+        }
     }
+
+
+
 }

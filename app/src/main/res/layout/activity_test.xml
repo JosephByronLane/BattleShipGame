@@ -110,6 +110,16 @@
                 android:id="@+id/userHitPoints"
                 android:text="AAAAAAA"></TextView>
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PlayerNumber"></TextView>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/PlayerNumber"
+                android:text="AAAAAAA"></TextView>
+
 
         </LinearLayout>
 
