@@ -31,43 +31,44 @@ class TestActivity : AppCompatActivity() {
         val loginPassword = findViewById<EditText>(R.id.loginPassword)
         val loginButton = findViewById<Button>(R.id.loginButton)
 
+        // Login UI elements2
+        val loginEmail2 = findViewById<EditText>(R.id.loginEmail2)
+        val loginPassword2 = findViewById<EditText>(R.id.loginPassword2)
+        val loginButton2 = findViewById<Button>(R.id.loginButton2)
+
+
+        //other shit
         val idTextField = findViewById<TextView>(R.id.idTextField)
+        val gameIdField = findViewById<TextView>(R.id.idGameField)
+        val hitPointsLeftField = findViewById<TextView>(R.id.userHitPoints)
+        val userTurnField =  findViewById<TextView>(R.id.userTurn)
 
-        // Register Button Click Listener
-        registerButton.setOnClickListener {
-            Log.d("gameManagertestingregister", "AAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-            val username = registerUsername.text.toString()
-            val email = registerEmail.text.toString()
-            val password = registerPassword.text.toString()
-            Log.d("gameManagertestingregister", "$username")
-            Log.d("gameManagertestingregister", "$email")
-            Log.d("gameManagertestingregister", "$password")
+        val shootfieldtextedit = findViewById<EditText>(R.id.shootCell)
 
 
 
-
-            if (username.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty()) {
-                gameManager.registerUser(email, password, username) { success, message ->
-                    if (success) {
-                        Log.d("gameManagertestingregister", "yes")
-
-                        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-                    } else {
-                        Log.d("gameManagertestingregister", "no")
-
-                        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-                    }
+        //testing functions
+        fun updateHitPoints(currentGameID: String?, loggedInUserID:String? ){
+            gameManager.getHitPoints(currentGameID, loggedInUserID) { success, message, hitPoints ->
+                if (success) {
+                    hitPointsLeftField.text = hitPoints.toString()
+                } else {
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                 }
-
-            } else {
-                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
             }
         }
 
-        // Login Button Click Listener
-        loginButton.setOnClickListener {
-            val email = loginEmail.text.toString().trim()
-            val password = loginPassword.text.toString().trim()
+        fun userLogin(loginHandler:Int){
+            var email = ""
+            var password = ""
+            if(loginHandler ==1){
+                 email = loginEmail.text.toString().trim()
+                 password = loginPassword.text.toString().trim()
+            }
+            else{
+                 email = loginEmail2.text.toString().trim()
+                 password = loginPassword2.text.toString().trim()
+            }
 
             if (email.isNotEmpty() && password.isNotEmpty()) {
                 gameManager.loginUser(email, password) { success, message, userId ->
@@ -89,8 +90,58 @@ class TestActivity : AppCompatActivity() {
             } else {
                 Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
             }
+        }
+
+
+        fun getUserTurn(){
+            gameManager.getWhosTurnIsIt(currentGameID) { success, message, turn ->
+                if (success) {
+                    userTurnField.text  = turn.toString()
+                } else {
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                }
+            }
 
         }
+
+        // Register Button Click Listener
+        registerButton.setOnClickListener {
+            Log.d("gameManagertestingregister", "AAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+            val username = registerUsername.text.toString()
+            val email = registerEmail.text.toString()
+            val password = registerPassword.text.toString()
+            Log.d("gameManagertestingregister", "$username")
+            Log.d("gameManagertestingregister", "$email")
+            Log.d("gameManagertestingregister", "$password")
+
+            if (username.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty()) {
+                gameManager.registerUser(email, password, username) { success, message ->
+                    if (success) {
+                        Log.d("gameManagertestingregister", "yes")
+
+                        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                    } else {
+                        Log.d("gameManagertestingregister", "no")
+
+                        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+            } else {
+                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Login Button Click Listener
+        loginButton.setOnClickListener {
+            userLogin(1)
+        }
+
+        // Login2 Button Click Listener
+        loginButton2.setOnClickListener {
+            userLogin(2)
+        }
+
         //crate match
         findViewById<Button>(R.id.makematch).setOnClickListener {
             Log.d("gameManagerLoginUserID", "$loggedInUserID")
@@ -101,10 +152,17 @@ class TestActivity : AppCompatActivity() {
                         Toast.makeText(this, "Match created! Game ID: $gameId", Toast.LENGTH_LONG)
                             .show()
                         // Navigate to game screen with gameId
+                        gameIdField.text = currentGameID
+                        updateHitPoints(currentGameID, loggedInUserID)
+                        getUserTurn()
+
+
+
                     } else {
                         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                     }
                 }
+
             }
         }
 
@@ -114,6 +172,11 @@ class TestActivity : AppCompatActivity() {
                 if (success) {
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                     currentGameID = gameId
+                    gameIdField.text = currentGameID
+                    updateHitPoints(currentGameID, loggedInUserID)
+                    getUserTurn()
+
+
                 } else {
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                 }
@@ -135,5 +198,24 @@ class TestActivity : AppCompatActivity() {
                 }
             }
         }
+
+
+        //shoot
+        findViewById<Button>(R.id.shoot).setOnClickListener {
+            var cellIndex = shootfieldtextedit.text.toString().toInt()
+            gameManager.shoot(currentGameID, loggedInUserID, cellIndex) { success, message ->
+                if (success) {
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                    getUserTurn()
+                    // Update UI based on the result of the shot.
+                } else {
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                }
+            }
+
+        }
+
+
+
     }
 }

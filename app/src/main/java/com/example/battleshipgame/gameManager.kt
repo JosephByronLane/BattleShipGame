@@ -1,10 +1,12 @@
 package com.example.battleshipgame
 
+import android.util.Log
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
+import kotlin.math.log
 
 
 data class User(
@@ -117,7 +119,7 @@ class GameManager(){
                         "isFull" to false,
                         "user1Id" to userId,
                         "user2Id" to "",
-                        "whosTurnIsIt" to 0,
+                        "whosTurnIsIt" to 1,
                         "user1Data" to mapOf(
                             "userShipBoard" to List(64) { 0 },  // Initializing an empty board.
                             "userFogOfWarBoard" to List(64) { 0 },  // Initializing an empty board.
@@ -232,6 +234,157 @@ class GameManager(){
             } else {
                 completion(false, "Failed to determine player role.")
             }
+        }
+    }
+
+    fun shoot(gameId: String?, userId: String?, cellIndex: Int, completion: (Boolean, String) -> Unit) {
+        if (userId == null) {
+            completion(false, "User ID is null")
+            return
+        }
+
+        val gameRef = gameId?.let { database.child("active_games").child(it) }
+        if (gameRef != null) {
+            gameRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        val isFull = snapshot.child("isFull").value as? Boolean
+                        if (isFull == false) {
+                            completion(false, "Match is not full yet.")
+                            return
+                        }
+                        val currentTurn = snapshot.child("whosTurnIsIt").value as? Long
+                        val user1Id = snapshot.child("user1Id").value as? String
+                        val user2Id = snapshot.child("user2Id").value as? String
+                        val isUser1Turn = (currentTurn == 1L && userId == user1Id)
+                        val isUser2Turn = (currentTurn == 2L && userId == user2Id)
+
+                        if (isUser1Turn || isUser2Turn) {
+                            val shooterBoardPath = if (isUser1Turn) "user1Data/userFogOfWarBoard" else "user2Data/userFogOfWarBoard"
+                            val targetBoardPath = if (isUser1Turn) "user2Data/userShipBoard" else "user1Data/userShipBoard"
+                            val targetHitPointsPath = if (isUser1Turn) "user2Data/hitPointsLeft" else "user1Data/hitPointsLeft"
+
+                            val nextTurn = if (isUser1Turn) 2L else 1L
+
+                            val shooterFogOfWarBoard = snapshot.child(shooterBoardPath).value as? List<Int>
+                            val targetShipBoard = snapshot.child(targetBoardPath).value as? List<Int>
+                            val targetHitPoints = snapshot.child(targetHitPointsPath).value as Long
+                            Log.d("GameManagerShoot", "HP: $targetHitPointsPath")
+
+                            if (shooterFogOfWarBoard != null && targetShipBoard != null) {
+                                val updatedFogOfWarBoard = shooterFogOfWarBoard.toMutableList()
+                                val targetCellStatus = targetShipBoard[cellIndex]
+                                var updatedHitPoints = targetHitPoints
+
+                                if (targetCellStatus == 1) {
+                                    updatedFogOfWarBoard[cellIndex] = 2  // Hit
+
+                                    if (updatedHitPoints!=null){
+                                        updatedHitPoints -= 1
+                                        Log.d("GameManagerShoot", "HP: $targetHitPointsPath")
+                                    }
+
+
+                                } else {
+                                    updatedFogOfWarBoard[cellIndex] = 1  // Miss
+                                }
+
+                                val updates = mapOf(
+                                    "whosTurnIsIt" to nextTurn,
+                                    "$shooterBoardPath" to updatedFogOfWarBoard,
+                                    targetHitPointsPath to updatedHitPoints
+                                )
+
+                                if (gameRef != null) {
+                                    gameRef.updateChildren(updates).addOnCompleteListener { task ->
+                                        if (task.isSuccessful) {
+                                            completion(true, "Shot fired successfully.")
+                                        } else {
+                                            completion(false, "Failed to update shot: ${task.exception?.message}")
+                                        }
+                                    }
+                                }
+                            } else {
+                                completion(false, "Failed to retrieve boards.")
+                            }
+                        } else {
+                            completion(false, "It's not your turn.")
+                        }
+                    } else {
+                        completion(false, "Game not found.")
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    completion(false, "Failed to read game data: ${error.message}")
+                }
+            })
+        }
+    }
+
+    fun getHitPoints(gameId: String?, userId: String?, completion: (Boolean, String, Int?) -> Unit) {
+        if (userId == null) {
+            completion(false, "User ID is null", null)
+            return
+        }
+
+        val gameRef = gameId?.let { database.child("active_games").child(it) }
+        if (gameRef != null) {
+            gameRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        val user1Id = snapshot.child("user1Id").value as? String
+                        val user2Id = snapshot.child("user2Id").value as? String
+
+                        val hitPointsPath = when (userId) {
+                            user1Id -> "user1Data/hitPointsLeft"
+                            user2Id -> "user2Data/hitPointsLeft"
+                            else -> {
+                                completion(false, "User not found in this game.", null)
+                                return
+                            }
+                        }
+
+                        val hitPoints = snapshot.child(hitPointsPath).value as? Long
+                        if (hitPoints != null) {
+                            completion(true, "Hit points retrieved successfully.", hitPoints.toInt())
+                        } else {
+                            completion(false, "Failed to retrieve hit points.", null)
+                        }
+                    } else {
+                        completion(false, "Game not found.", null)
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    completion(false, "Failed to read game data: ${error.message}", null)
+                }
+            })
+        }
+    }
+
+    fun getWhosTurnIsIt(gameId: String?, completion: (Boolean, String, Int?) -> Unit) {
+        val gameRef = gameId?.let { database.child("active_games").child(it).child("whosTurnIsIt") }
+
+        if (gameRef != null) {
+            gameRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        val turn = snapshot.value as? Long
+                        if (turn != null) {
+                            completion(true, "Turn retrieved successfully.", turn.toInt())
+                        } else {
+                            completion(false, "Failed to retrieve turn.", null)
+                        }
+                    } else {
+                        completion(false, "Game not found.", null)
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    completion(false, "Failed to read game data: ${error.message}", null)
+                }
+            })
         }
     }
 }
