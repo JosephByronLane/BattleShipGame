@@ -43,7 +43,8 @@ class TestActivity : AppCompatActivity() {
         val hitPointsLeftField = findViewById<TextView>(R.id.userHitPoints)
         val userTurnField =  findViewById<TextView>(R.id.userTurn)
         val userNumberField = findViewById<TextView>(R.id.PlayerNumber)
-
+        val userHighestScoreField = findViewById<TextView>(R.id.userhighestscore)
+        val usercurrentScore = findViewById<TextView>(R.id.playercurrentscore)
 
 
         val shootfieldtextedit = findViewById<EditText>(R.id.shootCell)
@@ -51,6 +52,28 @@ class TestActivity : AppCompatActivity() {
 
 
         //testing functions
+
+
+
+
+        fun updateScoreUI(){
+            gameManager.getUserCurrentScore(currentGameID, loggedInUserID) {success, score ->
+                if (success) {
+                    usercurrentScore.text  = score.toString()
+                } else {
+                    Toast.makeText(this, "ERROR UPDATING USER CURRENT SCOROE", Toast.LENGTH_LONG).show()
+                }
+            }
+            gameManager.getUserHighestScore(loggedInUserID) { success, score ->
+                if (success) {
+                    userHighestScoreField.text  = score.toString()
+                } else {
+                    Toast.makeText(this, "ERROR UPDATING USER higHEST SCORE", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+
+
         fun updateHitPoints(currentGameID: String?, loggedInUserID:String? ){
             gameManager.getHitPoints(currentGameID, loggedInUserID) { success, message, hitPoints ->
                 if (success) {
@@ -84,7 +107,7 @@ class TestActivity : AppCompatActivity() {
                             Toast.LENGTH_LONG
                         ).show()
                         idTextField.text = loggedInUserID
-
+                        updateScoreUI()
                         // Save userId for later use or pass it to the next activity
                     } else {
                         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
@@ -224,7 +247,8 @@ class TestActivity : AppCompatActivity() {
                 if (success) {
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                     getUserTurn()
-                    // Update UI based on the result of the shot.
+                    updateScoreUI()
+
                 } else {
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                 }

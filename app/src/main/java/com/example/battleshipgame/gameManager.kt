@@ -488,5 +488,42 @@ class GameManager(){
             }
         })
     }
+    fun getUserHighestScore(userId: String?, completion: (Boolean, Long?) -> Unit) {
+        val userRef = userId?.let { database.child("registered_users").child(it).child("highestScore") }
+
+        if (userRef != null) {
+            userRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val highestScore = snapshot.getValue(Long::class.java)
+                    completion(true, highestScore)
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    completion(false, null)
+                }
+            })
+        }
+    }
+    fun getUserCurrentScore(gameId: String?, userId: String?, completion: (Boolean, Long?) -> Unit) {
+        val gameRef = gameId?.let { database.child("active_games").child(it) }
+
+        if (gameRef != null) {
+            gameRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val userPath = if (snapshot.child("user1Id").value == userId) "user1Data/currentScore" else "user2Data/currentScore"
+                    val currentScore = snapshot.child(userPath).getValue(Long::class.java)
+                    completion(true, currentScore)
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    completion(false, null)
+                }
+            })
+        }
+    }
+
+
+
+
 
 }

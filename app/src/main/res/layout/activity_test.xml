@@ -119,8 +119,24 @@
                 android:layout_height="wrap_content"
                 android:id="@+id/PlayerNumber"
                 android:text="AAAAAAA"></TextView>
-
-
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="UserHighestScore"></TextView>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/userhighestscore"
+                android:text="AAAAAAA"></TextView>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CurrentScore"></TextView>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/playercurrentscore"
+                android:text="AAAAAAA"></TextView>
         </LinearLayout>
 
 
