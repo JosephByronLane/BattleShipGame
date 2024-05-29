@@ -3,6 +3,7 @@ package com.example.battleshipgame
 import android.util.Log
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
@@ -186,7 +187,7 @@ class GameManager(){
             })
     }
 
-    fun getPlayerRole(gameId: String?, userId: String?, completion: (Boolean, String?) -> Unit) {
+    private fun getPlayerRole(gameId: String?, userId: String?, completion: (Boolean, String?) -> Unit) {
         val gameRef = gameId?.let { database.child("active_games").child(it) }
 
         gameRef?.addListenerForSingleValueEvent(object : ValueEventListener {
@@ -305,7 +306,7 @@ class GameManager(){
                                 var newConsecutiveHits = shooterConsecutiveHits
 
                                 if(targetCellStatus == 2){
-                                    completion(false, "Already shot there before. Try somewhere else.")
+                                    completion(false, "You've already shot there before. Try somewhere else.")
                                     return
                                 }
 
@@ -529,8 +530,65 @@ class GameManager(){
         }
     }
 
+    val usersRef: com.google.firebase.database.DatabaseReference
+        get() = database.ref.child("registered_users")
+    interface UserRoleCallback {
+        fun onUserRoleReceived(userRole: String?)
+    }
+    fun getUserRoleInGame(gameId: String?, userId: String?, callback: UserRoleCallback) {
+        val gameRef = gameId?.let { database.child("active_games").child(it) }
+        if (gameRef != null) {
+            gameRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        val user1Id = snapshot.child("user1Id").value as? String
+                        val user2Id = snapshot.child("user2Id").value as? String
 
+                        val userRole = when (userId) {
+                            user1Id -> "user1Data"
+                            user2Id -> "user2Data"
+                            else -> null
+                        }
+                        callback.onUserRoleReceived(userRole)
+                    } else {
+                        callback.onUserRoleReceived(null)
+                    }
+                }
 
-
-
+                override fun onCancelled(error: DatabaseError) {
+                    callback.onUserRoleReceived(null)
+                }
+            })
+        }
+    }
+    fun gameRef(currentGameID: String?): DatabaseReference? {
+        return currentGameID?.let { database.ref.child("active_games").child(it) }
+    }
+    fun userShipBoardRef(gameId: String?, userId: String?): DatabaseReference? {
+        var userRole: String? = null
+        getUserRoleInGame(gameId, userId, object : UserRoleCallback {
+            override fun onUserRoleReceived(role: String?) {
+                userRole = role
+            }
+        })
+        return gameId?.let { database.ref.child("active_games").child(it).child("$userRole/userFogOfWarBoard") }
+    }
+    fun userHitPointsRef(gameId: String?, userId: String?):DatabaseReference? {
+        var userRole: String? = null
+        getUserRoleInGame(gameId, userId, object : UserRoleCallback {
+            override fun onUserRoleReceived(role: String?) {
+                userRole = role
+            }
+        })
+        return gameId?.let { database.ref.child("active_games").child(it).child("$userRole/hitPointsLeft") }
+    }
+    fun userFogOfWarBoardRef(gameId: String?, userId: String?):DatabaseReference? {
+        var userRole: String? = null
+        getUserRoleInGame(gameId, userId, object : UserRoleCallback {
+            override fun onUserRoleReceived(role: String?) {
+                userRole = role
+            }
+        })
+        return gameId?.let { database.ref.child("active_games").child(it).child("$userRole/userFogOfWarBoard") }
+    }
 }

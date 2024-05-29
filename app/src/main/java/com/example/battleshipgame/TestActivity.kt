@@ -7,6 +7,12 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.getValue
+import kotlin.math.log
 
 class TestActivity : AppCompatActivity() {
     private lateinit var gameManager: GameManager
@@ -47,14 +53,109 @@ class TestActivity : AppCompatActivity() {
         val usercurrentScore = findViewById<TextView>(R.id.playercurrentscore)
 
 
+        //listeners
+        val userEventListenerUpdatesField = findViewById<TextView>(R.id.userListenerUpdate)
+        var userRef = gameManager.usersRef
+        var amntUserUpdates = 0;
+
+        val fogOfWarEventListenerUpdatesField = findViewById<TextView>(R.id.fogOfWarUpdates)
+        var fogOfWarRef: DatabaseReference? = null
+        var amntFogOfWarUpdates = 0;
+
+        val shipBoardEventListenerUpdatesField = findViewById<TextView>(R.id.shipBoardUpdates)
+        var shipBoardRef: DatabaseReference? = null
+        var amntShipBoardUpdates = 0;
+
+        val gameEventListenerUpdatesField = findViewById<TextView>(R.id.gameListener)
+        var gameRef: DatabaseReference? = null
+        var amntGamerUpdates = 0;
+
+        val hitPointsEventListenerUpdatesField = findViewById<TextView>(R.id.hitPointListener)
+        var hitPpointsRef: DatabaseReference? = null
+        var hitPointUpdates = 0;
+
+
+
         val shootfieldtextedit = findViewById<EditText>(R.id.shootCell)
+
+
+        //listener functions
+
+
+        //update Listeners
+
+        userRef.addValueEventListener(object: ValueEventListener {
+
+            override fun onDataChange(snapshot: DataSnapshot) {
+
+                amntUserUpdates +=1;
+                userEventListenerUpdatesField.text = amntUserUpdates.toString()
+
+            }
+            override fun onCancelled(error: DatabaseError) {
+            }
+        })
+
+        fun setGameRefListener(){
+            gameRef = gameManager.gameRef(currentGameID)
+            gameRef?.addValueEventListener(object: ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    amntGamerUpdates +=1;
+                    Log.d("TestActivityJoinMatch", "$amntGamerUpdates")
+                    gameEventListenerUpdatesField.text = amntGamerUpdates.toString()
+
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                }
+            })
+        }
+        fun setFogOfWardRefListener(){
+            fogOfWarRef = gameManager.userFogOfWarBoardRef(loggedInUserID, currentGameID)
+            fogOfWarRef?.addValueEventListener(object: ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    amntFogOfWarUpdates +=1;
+                    Log.d("TestActivityJoinMatch", "$amntFogOfWarUpdates")
+                    fogOfWarEventListenerUpdatesField.text = amntFogOfWarUpdates.toString()
+
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                }
+            })
+        }
+        fun setShipBoardRefListeners(){
+            shipBoardRef = gameManager.userShipBoardRef(currentGameID,loggedInUserID)
+            shipBoardRef?.addValueEventListener(object: ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    amntShipBoardUpdates +=1;
+                    Log.d("TestActivityJoinMatch", "$amntShipBoardUpdates")
+                    shipBoardEventListenerUpdatesField.text = amntShipBoardUpdates.toString()
+
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                }
+            })
+        }
+        fun setHitPpointRefListener(){
+            hitPpointsRef = gameManager.userHitPointsRef(currentGameID,loggedInUserID)
+            hitPpointsRef?.addValueEventListener(object: ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    hitPointUpdates +=1;
+                    Log.d("TestActivityJoinMatch", "$hitPointUpdates")
+                    hitPointsEventListenerUpdatesField.text = hitPointUpdates.toString()
+                }
+                override fun onCancelled(error: DatabaseError) {
+                }
+            })
+        }
+
+
 
 
 
         //testing functions
-
-
-
 
         fun updateScoreUI(){
             gameManager.getUserCurrentScore(currentGameID, loggedInUserID) {success, score ->
@@ -196,7 +297,11 @@ class TestActivity : AppCompatActivity() {
                         updateHitPoints(currentGameID, loggedInUserID)
                         getUserTurn()
                         getUserNumber()
-
+                        setGameRefListener()
+                        setHitPpointRefListener()
+                        setFogOfWardRefListener()
+                        setGameRefListener()
+                        setShipBoardRefListeners()
 
                     } else {
                         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
@@ -216,6 +321,11 @@ class TestActivity : AppCompatActivity() {
                     updateHitPoints(currentGameID, loggedInUserID)
                     getUserTurn()
                     getUserNumber()
+                    setGameRefListener()
+                    setHitPpointRefListener()
+                    setFogOfWardRefListener()
+                    setGameRefListener()
+                    setShipBoardRefListeners()
 
                 } else {
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
@@ -264,8 +374,11 @@ class TestActivity : AppCompatActivity() {
                 Log.d("UserScores","Failed to retrieve and sort users.")
             }
         }
-    }
 
+
+
+
+    }
 
 
 }
