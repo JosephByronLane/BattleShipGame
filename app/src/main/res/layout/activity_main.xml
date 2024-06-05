@@ -21,7 +21,7 @@
     <ImageView
         android:layout_width="365dp"
         android:layout_height="158dp"
-        android:src="@drawable/Logo_Battleship"
+        android:src="@drawable/logo_battleship"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
