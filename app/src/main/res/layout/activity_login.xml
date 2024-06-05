@@ -7,6 +7,8 @@
     android:layout_height="match_parent"
     tools:context="LoginActivity"
     android:background="@drawable/peakpx"
+    android:backgroundTintMode="screen"
+    android:backgroundTint="#27FFFFFF"
     >
 
 
