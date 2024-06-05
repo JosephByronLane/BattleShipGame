@@ -5,27 +5,47 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".LoginActivity">
+    tools:context="LoginActivity"
+    >
 
-
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/peakpx"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:scaleType="fitXY"
+        android:tint="#25000000"
+        tools:ignore="UseAppTint" />
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="36dp"
         android:textAlignment="center"
-        android:textSize="36sp"
+        android:textSize="46sp"
+        android:textColor="#ffa500"
+        android:shadowColor="#000000"
+        android:shadowRadius="12"
+        android:shadowDx="0"
+        android:shadowDy="0"
+        android:fontFamily="@font/titles"
         app:layout_constraintBottom_toTopOf="@+id/editTextTextEmailAddress"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        tools:text="Ingrese sus datos para iniciar sesión" />
+        tools:text="Inicio de Sesión" />
+
 
     <EditText
         android:id="@+id/editTextNumberPassword"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="225sp"
+        android:layout_height="40sp"
         android:layout_marginBottom="424dp"
+        android:padding="10sp"
+
         android:ems="10"
         android:hint="Contraseña"
+        android:background="@color/white"
+        android:fontFamily="@font/titles"
         android:inputType="numberPassword"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -34,11 +54,14 @@
 
     <EditText
         android:id="@+id/editTextTextEmailAddress"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="225sp"
+        android:layout_height="40sp"
         android:layout_marginBottom="36dp"
         android:ems="10"
         android:hint="Correo"
+        android:padding="10sp"
+        android:background="@color/white"
+        android:fontFamily="@font/titles"
         android:inputType="textEmailAddress"
         app:layout_constraintBottom_toTopOf="@+id/editTextNumberPassword"
         app:layout_constraintEnd_toEndOf="parent"
@@ -51,14 +74,18 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="60dp"
-        android:background="#023ace"
+        android:background="@drawable/button_selector"
         android:paddingHorizontal="10dp"
-        android:textColor="#ffffff"
+        android:textColor="#000000"
+        android:fontFamily="@font/titles"
+        android:textSize="20sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editTextNumberPassword"
         app:layout_constraintVertical_bias="0.063"
-        tools:text="Iniciar sesión" />
+        tools:text="Iniciar sesión"
+
+        />
 </androidx.constraintlayout.widget.ConstraintLayout>
