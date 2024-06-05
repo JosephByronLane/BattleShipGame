@@ -6,12 +6,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="LoginActivity"
-    android:background="@drawable/peakpx"
-    android:backgroundTintMode="screen"
-    android:backgroundTint="#27FFFFFF"
     >
 
-
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/peakpx"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:scaleType="fitXY"
+        android:tint="#25000000"
+        tools:ignore="UseAppTint" />
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
