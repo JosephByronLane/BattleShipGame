@@ -7,13 +7,13 @@ android {
     namespace = "com.example.battleshipgame"
     compileSdk = 34
 
-    buildFeatures {
+    /*buildFeatures {
         compose = true
-    }
+    }*/
 
-    composeOptions {
+   /* composeOptions {
         kotlinCompilerExtensionVersion = "1.5.13"
-    }
+    }*/
 
     defaultConfig {
         applicationId = "com.example.battleshipgame"
@@ -45,7 +45,7 @@ android {
 
 dependencies {
 
-    val composeBom = platform("androidx.compose:compose-bom:2024.05.00")
+    /*val composeBom = platform("androidx.compose:compose-bom:2024.05.00")
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
@@ -84,7 +84,7 @@ dependencies {
     // Optional - Integration with LiveData
     implementation("androidx.compose.runtime:runtime-livedata")
     // Optional - Integration with RxJava
-    implementation("androidx.compose.runtime:runtime-rxjava2")
+    implementation("androidx.compose.runtime:runtime-rxjava2")*/
 
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.6.1")
@@ -92,6 +92,9 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.activity:activity:1.8.0")
+    implementation("com.google.ar.sceneform:filament-android:1.17.1")
+    implementation("com.google.firebase:firebase-database-ktx:21.0.0")
+    implementation("com.google.firebase:firebase-firestore-ktx:25.0.0")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
