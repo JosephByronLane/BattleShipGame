@@ -106,7 +106,6 @@ class GameActivity : AppCompatActivity() {
                     rivalUserId = if (currentUserId == user1Id) user2Id else user1Id
                     val gameInfoTextView: TextView = findViewById(R.id.gameInfoTextView)
                     gameInfoTextView.text = "Game ID: $currentGameId\nYour ID: $currentUserId\nRival ID: $rivalUserId"
-                    waitForOpponent()
                 }
             }
 
@@ -154,13 +153,13 @@ class GameActivity : AppCompatActivity() {
         val flattenedBoard = playerGrid.flatMap { it.toList() }
         gameManager.updateShipBoard(currentGameId, currentUserId, flattenedBoard) { success, message ->
             if (success) {
+                Toast.makeText(this, "Waiting for opponent to place ships...", Toast.LENGTH_SHORT).show()
                 waitForOpponent()
             } else {
                 Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
             }
         }
     }
-
 
     private fun waitForOpponent() {
         val statusTextView: TextView = findViewById(R.id.statusTextView)
@@ -172,10 +171,8 @@ class GameActivity : AppCompatActivity() {
                 gameManager.getWhosTurnIsIt(currentGameId) { success, message, turn ->
                     if (success && turn != null) {
                         runOnUiThread {
-                            if ((turn?.toLong() == 1L && currentUserId == user1Id) || (turn?.toLong() == 2L && currentUserId == user2Id)) {
-                                startGame()
-                                opponentReady = true
-                            }
+                            startGame()
+                            opponentReady = true
                         }
                     }
                 }
@@ -185,7 +182,6 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun startGame() {
-        isPlacingShips = false
         val statusTextView: TextView = findViewById(R.id.statusTextView)
         statusTextView.text = "Game in progress..."
         gameManager.getWhosTurnIsIt(currentGameId) { success, _, turn ->
