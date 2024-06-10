@@ -37,13 +37,14 @@ class GameActivity : AppCompatActivity() {
         gameManager = GameManager()
         currentUserId = intent.getStringExtra("userId")
         currentGameId = intent.getStringExtra("gameId")
-        rivalUserId = intent.getStringExtra("rivalUserId")
 
         if (currentUserId == null || currentGameId == null) {
             Toast.makeText(this, "Invalid game setup.", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
+
+        fetchRivalId(currentGameId, currentUserId)
 
         val gameInfoTextView: TextView = findViewById(R.id.gameInfoTextView)
         gameInfoTextView.text = "Game ID: $currentGameId\nYour ID: $currentUserId\nRival ID: $rivalUserId"
@@ -254,4 +255,25 @@ class GameActivity : AppCompatActivity() {
         val statusTextView: TextView = findViewById(R.id.statusTextView)
         statusTextView.text = if (isMyTurn) "Your turn" else "Opponent's turn"
     }
+
+    private fun fetchRivalId(gameId: String?, userId: String?) {
+        val gameRef = gameId?.let { gameManager.gameRef(it) }
+        gameRef?.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    val user1Id = snapshot.child("user1Id").value as? String
+                    val user2Id = snapshot.child("user2Id").value as? String
+
+                    rivalUserId = if (userId == user1Id) user2Id else user1Id
+                    val gameInfoTextView: TextView = findViewById(R.id.gameInfoTextView)
+                    gameInfoTextView.text = "Game ID: $currentGameId\nYour ID: $currentUserId\nRival ID: $rivalUserId"
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@GameActivity, "Failed to fetch rival ID: ${error.message}", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
 }
