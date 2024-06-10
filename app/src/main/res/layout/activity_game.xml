@@ -6,13 +6,26 @@
     tools:context=".GameActivity">
 
     <TextView
+        android:id="@+id/gameInfoTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:text="Game Info"
+        android:textSize="16sp"
+        android:textColor="@android:color/black"
+        android:layout_marginTop="16dp" />
+
+    <TextView
         android:id="@+id/statusTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_below="@id/gameInfoTextView"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="16dp"
         android:text="Place your ships"
-        android:textSize="18sp"/>
+        android:textSize="18sp"
+        android:textColor="@android:color/black" />
 
     <Button
         android:id="@+id/orientationToggle"
@@ -21,7 +34,7 @@
         android:layout_below="@id/statusTextView"
         android:layout_marginTop="16dp"
         android:layout_centerHorizontal="true"
-        android:text="Horizontal"/>
+        android:text="Horizontal" />
 
     <Spinner
         android:id="@+id/shipSizeSpinner"
@@ -29,7 +42,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/orientationToggle"
         android:layout_marginTop="16dp"
-        android:layout_centerHorizontal="true"/>
+        android:layout_centerHorizontal="true" />
 
     <GridLayout
         android:id="@+id/gridLayout"

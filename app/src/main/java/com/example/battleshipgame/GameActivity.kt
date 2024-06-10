@@ -7,6 +7,10 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.example.battleshipgame.GameManager
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.GenericTypeIndicator
+import com.google.firebase.database.ValueEventListener
 import kotlin.concurrent.thread
 
 class GameActivity : AppCompatActivity() {
@@ -14,8 +18,10 @@ class GameActivity : AppCompatActivity() {
     private lateinit var gameManager: GameManager
     private var currentUserId: String? = null
     private var currentGameId: String? = null
+    private var rivalUserId: String? = null
     private val gridSize = 8
     private val playerGrid = Array(gridSize) { IntArray(gridSize) }
+    private val gridButtons = Array(gridSize) { arrayOfNulls<Button>(gridSize) }
     private var isPlacingShips = true
     private var currentShipSize = 5 // Default to the largest ship size
     private var isVertical = false // Default orientation is horizontal
@@ -31,12 +37,16 @@ class GameActivity : AppCompatActivity() {
         gameManager = GameManager()
         currentUserId = intent.getStringExtra("userId")
         currentGameId = intent.getStringExtra("gameId")
+        rivalUserId = intent.getStringExtra("rivalUserId")
 
         if (currentUserId == null || currentGameId == null) {
             Toast.makeText(this, "Invalid game setup.", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
+
+        val gameInfoTextView: TextView = findViewById(R.id.gameInfoTextView)
+        gameInfoTextView.text = "Game ID: $currentGameId\nYour ID: $currentUserId\nRival ID: $rivalUserId"
 
         val statusTextView: TextView = findViewById(R.id.statusTextView)
         val orientationToggle: Button = findViewById(R.id.orientationToggle)
@@ -78,6 +88,7 @@ class GameActivity : AppCompatActivity() {
                         }
                     }
                 }
+                gridButtons[i][j] = button
                 gridLayout.addView(button)
             }
         }
@@ -89,8 +100,10 @@ class GameActivity : AppCompatActivity() {
                 for (i in 0 until currentShipSize) {
                     if (isVertical) {
                         playerGrid[row + i][col] = 1
+                        gridButtons[row + i][col]?.setBackgroundColor(Color.GRAY)
                     } else {
                         playerGrid[row][col + i] = 1
+                        gridButtons[row][col + i]?.setBackgroundColor(Color.GRAY)
                     }
                 }
                 placedShips[currentShipSize] = placedShips[currentShipSize]!! + 1
@@ -156,12 +169,25 @@ class GameActivity : AppCompatActivity() {
                 updateTurnStatus()
             }
         }
+        resetGridForGameplay()
+    }
+
+    private fun resetGridForGameplay() {
+        for (i in 0 until gridSize) {
+            for (j in 0 until gridSize) {
+                gridButtons[i][j]?.setBackgroundColor(Color.BLUE)
+                gridButtons[i][j]?.setOnClickListener {
+                    shoot(i, j)
+                }
+            }
+        }
     }
 
     private fun shoot(row: Int, col: Int) {
         if (isMyTurn) {
             gameManager.shoot(currentGameId, currentUserId, row * gridSize + col) { success, message ->
                 if (success) {
+                    updateGridAfterShot(row, col)
                     checkGameState()
                     isMyTurn = false
                     updateTurnStatus()
@@ -172,6 +198,25 @@ class GameActivity : AppCompatActivity() {
         } else {
             Toast.makeText(this, "It's not your turn!", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun updateGridAfterShot(row: Int, col: Int) {
+        gameManager.userFogOfWarBoardRef(currentGameId, currentUserId)?.addListenerForSingleValueEvent(object :
+            ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val fogOfWarBoard = snapshot.getValue(object : GenericTypeIndicator<List<Int>>() {})
+                if (fogOfWarBoard != null) {
+                    val hit = fogOfWarBoard[row * gridSize + col] == 2
+                    runOnUiThread {
+                        gridButtons[row][col]?.setBackgroundColor(if (hit) Color.RED else Color.WHITE)
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Handle error
+            }
+        })
     }
 
     private fun checkGameState() {
