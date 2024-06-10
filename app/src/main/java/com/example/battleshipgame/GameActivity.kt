@@ -1,59 +1,64 @@
 package com.example.battleshipgame
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import com.example.battleshipgame.GameManager
+import kotlin.concurrent.thread
 
 class GameActivity : AppCompatActivity() {
+
+    private lateinit var gameManager: GameManager
+    private var currentUserId: String? = null
+    private var currentGameId: String? = null
     private val gridSize = 8
-    private val battleshipGrid = Array(gridSize) { IntArray(gridSize) }
+    private val playerGrid = Array(gridSize) { IntArray(gridSize) }
     private var isPlacingShips = true
     private var currentShipSize = 5 // Default to the largest ship size
     private var isVertical = false // Default orientation is horizontal
-
-    // Track placed ships
+    private val shipTypes = mapOf(5 to 1, 4 to 1, 3 to 2, 2 to 1)
     private val placedShips = mutableMapOf(5 to 0, 4 to 0, 3 to 0, 2 to 0)
+    private var shipsPlaced = 0
+    private var isMyTurn = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_game)
 
-        val modeToggle: ToggleButton = findViewById(R.id.modeToggle)
-        val shipSizeSpinner: Spinner = findViewById(R.id.shipSizeSpinner)
-        val orientationToggle: ToggleButton = findViewById(R.id.orientationToggle)
+        gameManager = GameManager()
+        currentUserId = intent.getStringExtra("userId")
+        currentGameId = intent.getStringExtra("gameId")
 
-        modeToggle.setOnCheckedChangeListener { _, isChecked ->
-            isPlacingShips = !isChecked
+        if (currentUserId == null || currentGameId == null) {
+            Toast.makeText(this, "Invalid game setup.", Toast.LENGTH_SHORT).show()
+            finish()
+            return
         }
 
+        val statusTextView: TextView = findViewById(R.id.statusTextView)
+        val orientationToggle: Button = findViewById(R.id.orientationToggle)
+        val shipSizeSpinner: Spinner = findViewById(R.id.shipSizeSpinner)
+        val gridLayout: GridLayout = findViewById(R.id.gridLayout)
+
+        orientationToggle.setOnClickListener {
+            isVertical = !isVertical
+            orientationToggle.text = if (isVertical) "Vertical" else "Horizontal"
+        }
+
+        shipSizeSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, shipTypes.keys.toList()).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
         shipSizeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                currentShipSize = parent?.getItemAtPosition(position).toString().toInt()
+                currentShipSize = parent?.getItemAtPosition(position) as Int
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        orientationToggle.setOnCheckedChangeListener { _, isChecked ->
-            isVertical = isChecked
-        }
-
-        initializeGrid()
-        populateGridLayout()
-    }
-
-    private fun initializeGrid() {
-        for (i in 0 until gridSize) {
-            for (j in 0 until gridSize) {
-                battleshipGrid[i][j] = 0
-            }
-        }
-    }
-
-    private fun populateGridLayout() {
-        val gridLayout: GridLayout = findViewById(R.id.gridLayout)
         for (i in 0 until gridSize) {
             for (j in 0 until gridSize) {
                 val button = Button(this).apply {
@@ -69,7 +74,7 @@ class GameActivity : AppCompatActivity() {
                         if (isPlacingShips) {
                             placeShip(i, j)
                         } else {
-                            markHitOrMiss(i, j)
+                            shoot(i, j)
                         }
                     }
                 }
@@ -79,70 +84,129 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun placeShip(row: Int, col: Int) {
-        if (placedShips[currentShipSize]!! >= getMaxAllowedShips(currentShipSize)) {
-            Toast.makeText(this, "All $currentShipSize-cell ships are already placed", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        if (isVertical) {
-            if (row + currentShipSize <= gridSize && canPlaceShip(row, col, isVertical)) {
+        if (placedShips[currentShipSize]!! < shipTypes[currentShipSize]!!) {
+            if (canPlaceShip(row, col, isVertical)) {
                 for (i in 0 until currentShipSize) {
-                    battleshipGrid[row + i][col] = 1
-                    updateButtonColor(row + i, col, Color.GRAY)
+                    if (isVertical) {
+                        playerGrid[row + i][col] = 1
+                    } else {
+                        playerGrid[row][col + i] = 1
+                    }
                 }
                 placedShips[currentShipSize] = placedShips[currentShipSize]!! + 1
+                shipsPlaced++
+                if (shipsPlaced == shipTypes.values.sum()) {
+                    isPlacingShips = false
+                    notifyReady()
+                }
+            } else {
+                Toast.makeText(this, "Cannot place ship here.", Toast.LENGTH_SHORT).show()
             }
         } else {
-            if (col + currentShipSize <= gridSize && canPlaceShip(row, col, isVertical)) {
-                for (i in 0 until currentShipSize) {
-                    battleshipGrid[row][col + i] = 1
-                    updateButtonColor(row, col + i, Color.GRAY)
-                }
-                placedShips[currentShipSize] = placedShips[currentShipSize]!! + 1
-            }
-        }
-    }
-
-    private fun getMaxAllowedShips(size: Int): Int {
-        return when (size) {
-            5 -> 1
-            4 -> 1
-            3 -> 2
-            2 -> 1
-            else -> 0
+            Toast.makeText(this, "All $currentShipSize-cell ships are already placed.", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun canPlaceShip(row: Int, col: Int, vertical: Boolean): Boolean {
         return if (vertical) {
-            (0 until currentShipSize).all { battleshipGrid[row + it][col] == 0 }
+            (0 until currentShipSize).all { row + it < gridSize && playerGrid[row + it][col] == 0 }
         } else {
-            (0 until currentShipSize).all { battleshipGrid[row][col + it] == 0 }
+            (0 until currentShipSize).all { col + it < gridSize && playerGrid[row][col + it] == 0 }
         }
     }
 
-    private fun markHitOrMiss(row: Int, col: Int) {
-        if (battleshipGrid[row][col] == 1) {
-            battleshipGrid[row][col] = 2
-            updateButtonColor(row, col, Color.RED) // Hit
-        } else {
-            updateButtonColor(row, col, Color.WHITE) // Miss
-        }
-    }
-
-    private fun updateButtonColor(row: Int, col: Int, color: Int) {
-        val gridLayout: GridLayout = findViewById(R.id.gridLayout)
-        val button = gridLayout.getChildAt(row * gridSize + col) as Button
-        button.setBackgroundColor(color)
-    }
-
-    private fun resetGrid() {
-        for (i in 0 until gridSize) {
-            for (j in 0 until gridSize) {
-                battleshipGrid[i][j] = 0
-                updateButtonColor(i, j, Color.BLUE)
+    private fun notifyReady() {
+        val flattenedBoard = playerGrid.map { it.toList() }.flatten()
+        gameManager.updateShipBoard(currentGameId, currentUserId, flattenedBoard) { success, message ->
+            if (success) {
+                waitForOpponent()
+            } else {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
             }
         }
-        placedShips.keys.forEach { placedShips[it] = 0 }
+    }
+
+    private fun waitForOpponent() {
+        val statusTextView: TextView = findViewById(R.id.statusTextView)
+        statusTextView.text = "Waiting for opponent..."
+        var opponentReady = false
+
+        thread {
+            while (!opponentReady) {
+                gameManager.getWhosTurnIsIt(currentGameId) { success, message, turn ->
+                    if (success && turn != null) {
+                        runOnUiThread {
+                            startGame()
+                        }
+                        opponentReady = true
+                    }
+                }
+                Thread.sleep(2000)
+            }
+        }
+    }
+
+    private fun startGame() {
+        isPlacingShips = false
+        val statusTextView: TextView = findViewById(R.id.statusTextView)
+        statusTextView.text = "Game in progress..."
+        gameManager.getWhosTurnIsIt(currentGameId) { success, _, turn ->
+            if (success) {
+                isMyTurn = (currentUserId == turn.toString())
+                updateTurnStatus()
+            }
+        }
+    }
+
+    private fun shoot(row: Int, col: Int) {
+        if (isMyTurn) {
+            gameManager.shoot(currentGameId, currentUserId, row * gridSize + col) { success, message ->
+                if (success) {
+                    checkGameState()
+                    isMyTurn = false
+                    updateTurnStatus()
+                } else {
+                    Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        } else {
+            Toast.makeText(this, "It's not your turn!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun checkGameState() {
+        gameManager.getHitPoints(currentGameId, currentUserId) { success, _, hitPoints ->
+            if (success) {
+                if (hitPoints == 0) {
+                    endGame(false)
+                } else {
+                    gameManager.getHitPoints(currentGameId, null) { opponentSuccess, _, opponentHitPoints ->
+                        if (opponentSuccess) {
+                            if (opponentHitPoints == 0) {
+                                endGame(true)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun endGame(won: Boolean) {
+        val statusTextView: TextView = findViewById(R.id.statusTextView)
+        statusTextView.text = if (won) "You won!" else "You lost!"
+        thread {
+            Thread.sleep(3000)
+            runOnUiThread {
+                val intent = Intent(this, MainActivity::class.java)
+                startActivity(intent)
+                finish()
+            }
+        }
+    }
+
+    private fun updateTurnStatus() {
+        val statusTextView: TextView = findViewById(R.id.statusTextView)
+        statusTextView.text = if (isMyTurn) "Your turn" else "Opponent's turn"
     }
 }

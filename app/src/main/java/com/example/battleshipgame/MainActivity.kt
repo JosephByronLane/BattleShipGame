@@ -8,6 +8,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.Spinner
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.battleshipgame.GameManager
 
@@ -15,6 +16,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var gameManager: GameManager
     private var currentUserId: String? = null
+    private var currentGameId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,9 +36,7 @@ class MainActivity : AppCompatActivity() {
 
         playButton.setOnClickListener {
             if (currentUserId != null) {
-                val intent = Intent(this, GameActivity::class.java)
-                intent.putExtra("userId", currentUserId)
-                startActivity(intent)
+                findOrCreateMatch()
             }
         }
 
@@ -59,7 +59,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_LOGIN && resultCode == RESULT_OK) {
@@ -70,11 +69,38 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadLocalUsers(spinner: Spinner) {
-        val sharedPref = getSharedPreferences("local_users", Context.MODE_PRIVATE)
+        val sharedPref = getSharedPreferences("local_users", MODE_PRIVATE)
         val users = sharedPref.getStringSet("users", mutableSetOf())?.toList() ?: listOf()
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, users)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinner.adapter = adapter
+    }
+
+    private fun findOrCreateMatch() {
+        currentUserId?.let { userId ->
+            gameManager.joinMatch(userId) { success, message, gameId ->
+                if (success) {
+                    currentGameId = gameId
+                    startGame()
+                } else {
+                    gameManager.createMatch(userId) { createSuccess, createMessage, createGameId ->
+                        if (createSuccess) {
+                            currentGameId = createGameId
+                            startGame()
+                        } else {
+                            Toast.makeText(this, createMessage, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun startGame() {
+        val intent = Intent(this, GameActivity::class.java)
+        intent.putExtra("userId", currentUserId)
+        intent.putExtra("gameId", currentGameId)
+        startActivity(intent)
     }
 
     companion object {

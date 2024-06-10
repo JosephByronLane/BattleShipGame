@@ -3,47 +3,44 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".GameActivity">
 
-    <ToggleButton
-        android:id="@+id/modeToggle"
+    <TextView
+        android:id="@+id/statusTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textOff="Place Ships"
-        android:textOn="Mark Hits"
-        android:layout_margin="16dp"
-        android:checked="false"/>
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="16dp"
+        android:text="Place your ships"
+        android:textSize="18sp"/>
+
+    <Button
+        android:id="@+id/orientationToggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/statusTextView"
+        android:layout_marginTop="16dp"
+        android:layout_centerHorizontal="true"
+        android:text="Horizontal"/>
 
     <Spinner
         android:id="@+id/shipSizeSpinner"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/modeToggle"
+        android:layout_below="@id/orientationToggle"
         android:layout_marginTop="16dp"
-        android:entries="@array/ship_sizes"/>
-
-    <ToggleButton
-        android:id="@+id/orientationToggle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/shipSizeSpinner"
-        android:layout_marginTop="16dp"
-        android:checked="false"
-        android:textOff="Horizontal"
-        android:textOn="Vertical" />
+        android:layout_centerHorizontal="true"/>
 
     <GridLayout
         android:id="@+id/gridLayout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/orientationToggle"
+        android:layout_below="@id/shipSizeSpinner"
+        android:layout_marginTop="16dp"
         android:layout_centerHorizontal="true"
         android:columnCount="8"
         android:rowCount="8"
         android:padding="16dp">
-
-        <!-- Cells will be added dynamically from code -->
-
     </GridLayout>
 
 </RelativeLayout>
