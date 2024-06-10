@@ -29,6 +29,8 @@ class GameActivity : AppCompatActivity() {
     private val placedShips = mutableMapOf(5 to 0, 4 to 0, 3 to 0, 2 to 0)
     private var shipsPlaced = 0
     private var isMyTurn = false
+    private var user1Id: String? = null
+    private var user2Id: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,12 +46,11 @@ class GameActivity : AppCompatActivity() {
             return
         }
 
-        fetchRivalId(currentGameId, currentUserId)
+        initializeViews()
+        fetchGameDetails()
+    }
 
-        val gameInfoTextView: TextView = findViewById(R.id.gameInfoTextView)
-        gameInfoTextView.text = "Game ID: $currentGameId\nYour ID: $currentUserId\nRival ID: $rivalUserId"
-
-        val statusTextView: TextView = findViewById(R.id.statusTextView)
+    private fun initializeViews() {
         val orientationToggle: Button = findViewById(R.id.orientationToggle)
         val shipSizeSpinner: Spinner = findViewById(R.id.shipSizeSpinner)
         val gridLayout: GridLayout = findViewById(R.id.gridLayout)
@@ -95,6 +96,26 @@ class GameActivity : AppCompatActivity() {
         }
     }
 
+    private fun fetchGameDetails() {
+        gameManager.gameRef(currentGameId)?.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    user1Id = snapshot.child("user1Id").value as? String
+                    user2Id = snapshot.child("user2Id").value as? String
+
+                    rivalUserId = if (currentUserId == user1Id) user2Id else user1Id
+                    val gameInfoTextView: TextView = findViewById(R.id.gameInfoTextView)
+                    gameInfoTextView.text = "Game ID: $currentGameId\nYour ID: $currentUserId\nRival ID: $rivalUserId"
+                    waitForOpponent()
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@GameActivity, "Failed to fetch game details: ${error.message}", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
     private fun placeShip(row: Int, col: Int) {
         if (placedShips[currentShipSize]!! < shipTypes[currentShipSize]!!) {
             if (canPlaceShip(row, col, isVertical)) {
@@ -130,7 +151,7 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun notifyReady() {
-        val flattenedBoard = playerGrid.map { it.toList() }.flatten()
+        val flattenedBoard = playerGrid.flatMap { it.toList() }
         gameManager.updateShipBoard(currentGameId, currentUserId, flattenedBoard) { success, message ->
             if (success) {
                 waitForOpponent()
@@ -139,6 +160,7 @@ class GameActivity : AppCompatActivity() {
             }
         }
     }
+
 
     private fun waitForOpponent() {
         val statusTextView: TextView = findViewById(R.id.statusTextView)
@@ -150,9 +172,11 @@ class GameActivity : AppCompatActivity() {
                 gameManager.getWhosTurnIsIt(currentGameId) { success, message, turn ->
                     if (success && turn != null) {
                         runOnUiThread {
-                            startGame()
+                            if ((turn?.toLong() == 1L && currentUserId == user1Id) || (turn?.toLong() == 2L && currentUserId == user2Id)) {
+                                startGame()
+                                opponentReady = true
+                            }
                         }
-                        opponentReady = true
                     }
                 }
                 Thread.sleep(2000)
@@ -166,7 +190,7 @@ class GameActivity : AppCompatActivity() {
         statusTextView.text = "Game in progress..."
         gameManager.getWhosTurnIsIt(currentGameId) { success, _, turn ->
             if (success) {
-                isMyTurn = (currentUserId == turn.toString())
+                isMyTurn = (turn?.toLong() == 1L && currentUserId == user1Id) || (turn?.toLong() == 2L && currentUserId == user2Id)
                 updateTurnStatus()
             }
         }
@@ -202,8 +226,7 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun updateGridAfterShot(row: Int, col: Int) {
-        gameManager.userFogOfWarBoardRef(currentGameId, currentUserId)?.addListenerForSingleValueEvent(object :
-            ValueEventListener {
+        gameManager.userFogOfWarBoardRef(currentGameId, currentUserId)?.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val fogOfWarBoard = snapshot.getValue(object : GenericTypeIndicator<List<Int>>() {})
                 if (fogOfWarBoard != null) {
@@ -254,26 +277,28 @@ class GameActivity : AppCompatActivity() {
     private fun updateTurnStatus() {
         val statusTextView: TextView = findViewById(R.id.statusTextView)
         statusTextView.text = if (isMyTurn) "Your turn" else "Opponent's turn"
+
+        if (!isMyTurn) {
+            waitForOpponentTurn()
+        }
     }
 
-    private fun fetchRivalId(gameId: String?, userId: String?) {
-        val gameRef = gameId?.let { gameManager.gameRef(it) }
-        gameRef?.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()) {
-                    val user1Id = snapshot.child("user1Id").value as? String
-                    val user2Id = snapshot.child("user2Id").value as? String
+    private fun waitForOpponentTurn() {
+        var turnChanged = false
 
-                    rivalUserId = if (userId == user1Id) user2Id else user1Id
-                    val gameInfoTextView: TextView = findViewById(R.id.gameInfoTextView)
-                    gameInfoTextView.text = "Game ID: $currentGameId\nYour ID: $currentUserId\nRival ID: $rivalUserId"
+        thread {
+            while (!turnChanged) {
+                gameManager.getWhosTurnIsIt(currentGameId) { success, _, turn ->
+                    if (success && ((turn?.toLong() == 1L && currentUserId == user1Id) || (turn?.toLong() == 2L && currentUserId == user2Id))) {
+                        runOnUiThread {
+                            turnChanged = true
+                            isMyTurn = true
+                            updateTurnStatus()
+                        }
+                    }
                 }
+                Thread.sleep(2000)
             }
-
-            override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@GameActivity, "Failed to fetch rival ID: ${error.message}", Toast.LENGTH_SHORT).show()
-            }
-        })
+        }
     }
-
 }
