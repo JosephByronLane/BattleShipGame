@@ -29,7 +29,7 @@
         app:layout_constraintVertical_bias="0.027" />
 
     <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/appCompatButton2"
+        android:id="@+id/login_button"
         android:layout_width="150sp"
         android:layout_height="wrap_content"
         android:background="@drawable/button_selector"
@@ -43,12 +43,12 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.464"
-        tools:text="Iniciar sesión"
+        android:text="Iniciar sesión"
 
         />
 
     <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/appCompatButton"
+        android:id="@+id/play_button"
         android:layout_width="150sp"
         android:layout_height="wrap_content"
         android:background="@drawable/button_selector"
@@ -62,10 +62,10 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.601"
-        tools:text="Jugar" />
+        android:text="Jugar" />
 
     <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/appCompatButton3"
+        android:id="@+id/scoreboard_button"
         android:layout_width="150sp"
         android:layout_height="wrap_content"
         android:background="@drawable/button_selector"
@@ -79,7 +79,21 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.737"
-        tools:text="Puntuaciones" />
+        android:text="Puntuaciones" />
+
+    <Spinner
+        android:id="@+id/userSpinner"
+        android:background="#ffffff"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="29dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/scoreboard_button"
+        app:layout_constraintVertical_bias="0.103" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
