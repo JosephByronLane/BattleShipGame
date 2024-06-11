@@ -171,8 +171,10 @@ class GameActivity : AppCompatActivity() {
                 gameManager.getWhosTurnIsIt(currentGameId) { success, message, turn ->
                     if (success && turn != null) {
                         runOnUiThread {
-                            startGame()
-                            opponentReady = true
+                            if (turn?.toLong() == 1L || turn?.toLong() == 2L) {
+                                startGame()
+                                opponentReady = true
+                            }
                         }
                     }
                 }
@@ -245,7 +247,7 @@ class GameActivity : AppCompatActivity() {
                 if (hitPoints == 0) {
                     endGame(false)
                 } else {
-                    gameManager.getHitPoints(currentGameId, null) { opponentSuccess, _, opponentHitPoints ->
+                    gameManager.getHitPoints(currentGameId, rivalUserId) { opponentSuccess, _, opponentHitPoints ->
                         if (opponentSuccess) {
                             if (opponentHitPoints == 0) {
                                 endGame(true)
