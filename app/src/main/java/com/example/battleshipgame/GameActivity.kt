@@ -236,7 +236,7 @@ class GameActivity : AppCompatActivity() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                // Handle error
+                Toast.makeText(this@GameActivity, "Error fetching fog of war data: ${error.message}", Toast.LENGTH_SHORT).show()
             }
         })
     }
