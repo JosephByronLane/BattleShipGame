@@ -1,6 +1,8 @@
 package com.example.battleshipgame
 
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Button
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -12,6 +14,7 @@ import com.google.firebase.database.FirebaseDatabase
 
 class ScoresActivity : AppCompatActivity() {
 
+    lateinit var backButton: Button
     lateinit var gameManager: GameManager
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,6 +43,12 @@ class ScoresActivity : AppCompatActivity() {
                 // Handle the error
                 Toast.makeText(this, "Failed to retrieve user data", Toast.LENGTH_SHORT).show()
             }
+        }
+        backButton = findViewById(R.id.imageButton)
+        backButton.setOnClickListener {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+            finish()
         }
     }
     private fun setupRecyclerView(userList: List<User>) {
