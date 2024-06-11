@@ -15,7 +15,7 @@ data class User(
     var email: String = "",
     var password: String = "",
     var username: String = "",
-    var highestScore: Int = 0
+    var highestScore: Long = 0
 )
 data class Game(
     var gameId: String = "",

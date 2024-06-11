@@ -6,7 +6,8 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class UserAdapter(private val userList: List<User>) : RecyclerView.Adapter<UserAdapter.UserViewHolder>() {
+class UserAdapter(private val userList: List<Map<String, Any>>) :
+    RecyclerView.Adapter<UserAdapter.UserViewHolder>() {
 
     class UserViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val usernameTextView: TextView = itemView.findViewById(R.id.usernameTextView)
@@ -20,8 +21,8 @@ class UserAdapter(private val userList: List<User>) : RecyclerView.Adapter<UserA
 
     override fun onBindViewHolder(holder: UserViewHolder, position: Int) {
         val user = userList[position]
-        holder.usernameTextView.text = user.username
-        holder.highestScoreTextView.text = user.highestScore.toString()
+        holder.usernameTextView.text = user["username"] as String
+        holder.highestScoreTextView.text = user["highestScore"].toString()
     }
 
     override fun getItemCount() = userList.size
